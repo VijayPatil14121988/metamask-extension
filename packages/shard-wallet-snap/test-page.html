@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shard Wallet Snap - Test Page</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      margin-top: 0;
+    }
+    h2 {
+      color: #555;
+      border-bottom: 2px solid #e0e0e0;
+      padding-bottom: 10px;
+    }
+    button {
+      background: #037dd6;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      margin: 10px 10px 10px 0;
+    }
+    button:hover {
+      background: #0260a4;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .success {
+      background: #10b981;
+    }
+    .warning {
+      background: #f59e0b;
+    }
+    .danger {
+      background: #ef4444;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    .output {
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 15px;
+      margin: 10px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .status {
+      padding: 10px;
+      border-radius: 6px;
+      margin: 10px 0;
+    }
+    .status.connected {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .status.disconnected {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .label {
+      font-weight: 600;
+      margin-top: 15px;
+      display: block;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🔐 Shard Wallet Snap - Test Page</h1>
+    <p>Test your Shard Wallet MetaMask Snap integration</p>
+
+    <div id="status" class="status disconnected">
+      ❌ Not Connected - Install MetaMask Flask first
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>1. Connect to Snap</h2>
+    <p>First, connect to the Shard Wallet Snap. This will install it in MetaMask Flask.</p>
+    <button id="connectBtn" onclick="connectSnap()">Connect Snap</button>
+  </div>
+
+  <div class="card">
+    <h2>2. Securitize Wallet</h2>
+    <p>Test the securitization flow (splits private key into 4 shards)</p>
+
+    <label class="label">Private Key (test only!):</label>
+    <input type="text" id="privateKey" placeholder="0x1111111111111111111111111111111111111111111111111111111111111111"
+           value="0x1111111111111111111111111111111111111111111111111111111111111111">
+
+    <label class="label">Wallet Address:</label>
+    <input type="text" id="walletAddress" placeholder="0xABCDEF1234567890ABCDEF1234567890ABCDEF12"
+           value="0xABCDEF1234567890ABCDEF1234567890ABCDEF12">
+
+    <label class="label">PIN:</label>
+    <input type="text" id="pin" placeholder="test1234" value="test1234">
+
+    <button onclick="securitize()" class="success">Securitize Wallet</button>
+    <div id="securitizeOutput" class="output" style="display:none"></div>
+  </div>
+
+  <div class="card">
+    <h2>3. Recover Wallet</h2>
+    <p>Test recovery from shards (requires at least 2 shards)</p>
+
+    <label class="label">Wallet Address:</label>
+    <input type="text" id="recoverAddress" placeholder="0xABCDEF1234567890ABCDEF1234567890ABCDEF12"
+           value="0xABCDEF1234567890ABCDEF1234567890ABCDEF12">
+
+    <label class="label">PIN:</label>
+    <input type="text" id="recoverPin" placeholder="test1234" value="test1234">
+
+    <button onclick="recover()" class="warning">Recover Wallet</button>
+    <div id="recoverOutput" class="output" style="display:none"></div>
+  </div>
+
+  <div class="card">
+    <h2>4. Check Health</h2>
+    <p>Check the health status of all 4 shard storage locations</p>
+
+    <button onclick="checkHealth()">Check Health Status</button>
+    <div id="healthOutput" class="output" style="display:none"></div>
+  </div>
+
+  <div class="card">
+    <h2>5. Get Version</h2>
+    <button onclick="getVersion()">Get Snap Version</button>
+    <div id="versionOutput" class="output" style="display:none"></div>
+  </div>
+
+  <script>
+    // Local snap ID format - using port 9000 to bypass cache
+    let snapId = 'local:http://localhost:9000';
+
+    // Check if MetaMask is installed
+    async function checkMetaMask() {
+      if (typeof window.ethereum !== 'undefined') {
+        document.getElementById('status').className = 'status connected';
+        document.getElementById('status').innerHTML = '✅ MetaMask detected';
+        return true;
+      } else {
+        document.getElementById('status').className = 'status disconnected';
+        document.getElementById('status').innerHTML = '❌ MetaMask not detected - Install MetaMask Flask';
+        return false;
+      }
+    }
+
+    // Connect to Snap
+    async function connectSnap() {
+      if (!await checkMetaMask()) return;
+
+      try {
+        const result = await window.ethereum.request({
+          method: 'wallet_requestSnaps',
+          params: {
+            [snapId]: {}
+          }
+        });
+
+        console.log('Snap connected:', result);
+        document.getElementById('status').className = 'status connected';
+        document.getElementById('status').innerHTML = '✅ Snap Connected Successfully!';
+        alert('✅ Snap connected successfully!');
+      } catch (error) {
+        console.error('Error connecting to snap:', error);
+        alert('❌ Error: ' + error.message);
+      }
+    }
+
+    // Securitize wallet
+    async function securitize() {
+      const privateKey = document.getElementById('privateKey').value;
+      const walletAddress = document.getElementById('walletAddress').value;
+      const pin = document.getElementById('pin').value;
+
+      if (!privateKey || !walletAddress || !pin) {
+        alert('Please fill all fields');
+        return;
+      }
+
+      const output = document.getElementById('securitizeOutput');
+      output.style.display = 'block';
+      output.textContent = 'Securitizing wallet...\n';
+
+      try {
+        const response = await window.ethereum.request({
+          method: 'wallet_invokeSnap',
+          params: {
+            snapId,
+            request: {
+              method: 'shard_securitize',
+              params: {
+                privateKey,
+                walletAddress,
+                pin
+              }
+            }
+          }
+        });
+
+        output.textContent = 'SUCCESS!\n\n' + JSON.stringify(response, null, 2);
+      } catch (error) {
+        output.textContent = 'ERROR:\n\n' + error.message;
+      }
+    }
+
+    // Recover wallet
+    async function recover() {
+      const walletAddress = document.getElementById('recoverAddress').value;
+      const pin = document.getElementById('recoverPin').value;
+
+      if (!walletAddress || !pin) {
+        alert('Please fill all fields');
+        return;
+      }
+
+      const output = document.getElementById('recoverOutput');
+      output.style.display = 'block';
+      output.textContent = 'Recovering wallet...\n';
+
+      try {
+        const response = await window.ethereum.request({
+          method: 'wallet_invokeSnap',
+          params: {
+            snapId,
+            request: {
+              method: 'shard_recover',
+              params: {
+                walletAddress,
+                pin
+              }
+            }
+          }
+        });
+
+        output.textContent = 'SUCCESS!\n\n' + JSON.stringify(response, null, 2);
+      } catch (error) {
+        output.textContent = 'ERROR:\n\n' + error.message;
+      }
+    }
+
+    // Check health
+    async function checkHealth() {
+      const output = document.getElementById('healthOutput');
+      output.style.display = 'block';
+      output.textContent = 'Checking health...\n';
+
+      try {
+        const response = await window.ethereum.request({
+          method: 'wallet_invokeSnap',
+          params: {
+            snapId,
+            request: {
+              method: 'shard_checkHealth'
+            }
+          }
+        });
+
+        output.textContent = 'HEALTH STATUS:\n\n' + JSON.stringify(response, null, 2);
+      } catch (error) {
+        output.textContent = 'ERROR:\n\n' + error.message;
+      }
+    }
+
+    // Get version
+    async function getVersion() {
+      const output = document.getElementById('versionOutput');
+      output.style.display = 'block';
+      output.textContent = 'Getting version...\n';
+
+      try {
+        const response = await window.ethereum.request({
+          method: 'wallet_invokeSnap',
+          params: {
+            snapId,
+            request: {
+              method: 'shard_getVersion'
+            }
+          }
+        });
+
+        output.textContent = 'VERSION:\n\n' + JSON.stringify(response, null, 2);
+      } catch (error) {
+        output.textContent = 'ERROR:\n\n' + error.message;
+      }
+    }
+
+    // Check on page load
+    window.onload = checkMetaMask;
+  </script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+{
+  "name": "shard-crypto-sdk",
+  "type": "module",
+  "collaborators": [
+    "@Shard Development Team"
+  ],
+  "description": "Phase 1 POC - Cryptographic SDK for secure key sharding using Shamir Secret Sharing",
+  "version": "0.1.0",
+  "license": "MIT OR Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shard/crypto-sdk"
+  },
+  "files": [
+    "shard_crypto_sdk_bg.wasm",
+    "shard_crypto_sdk.js",
+    "shard_crypto_sdk.d.ts"
+  ],
+  "main": "shard_crypto_sdk.js",
+  "types": "shard_crypto_sdk.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ],
+  "keywords": [
+    "cryptography",
+    "shamir",
+    "secret-sharing",
+    "wallet",
+    "security"
+  ]
+}

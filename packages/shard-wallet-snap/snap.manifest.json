@@ -1,0 +1,40 @@
+{
+  "version": "1.0.0",
+  "description": "Shard Wallet Snap for secure key management with 2-of-4 threshold Shamir Secret Sharing",
+  "proposedName": "Shard Wallet Snap",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shard/wallet-snap.git"
+  },
+  "source": {
+    "shasum": "y+QzV/m89v9GnuCrezhM6PS9bTf2HTsHIkjS8absMM0=",
+    "location": {
+      "npm": {
+        "filePath": "dist/bundle.js",
+        "packageName": "@shard/wallet-snap",
+        "registry": "https://registry.npmjs.org/"
+      }
+    }
+  },
+  "initialPermissions": {
+    "endowment:rpc": {
+      "dapps": true,
+      "snaps": false
+    },
+    "endowment:lifecycle-hooks": {},
+    "snap_manageState": {},
+    "snap_notify": {},
+    "endowment:cronjob": {
+      "jobs": [
+        {
+          "expression": "0 0 * * *",
+          "request": {
+            "method": "shard_healthCheck"
+          }
+        }
+      ]
+    }
+  },
+  "platformVersion": "6.24.0",
+  "manifestVersion": "0.1"
+}
